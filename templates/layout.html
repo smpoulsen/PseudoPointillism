@@ -1,0 +1,156 @@
+<!DOCTYPE HTML>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+        <title>Pointilism!</title>
+    </head>
+    <body>
+        <h4>Click me!</h4>
+
+        <script type="text/javascript">
+        var aspect = {{ aspect }}
+        var h = window.innerHeight - 100;
+        var w = aspect * h;
+        var padding = 10;
+
+        var randomPoints = function(points) {
+            var newDataset = [];
+            for (var i=0; i < points; i++){
+                var x = Math.floor(Math.random() * w);
+                var y = Math.floor(Math.random() * h);
+                var color = randomColors();
+                newDataset.push({"x":x, "y": y, "color": color});
+            }
+            return newDataset;
+        };
+
+        var randomColors = function() {
+            var color = "rgb(" + Math.floor(Math.random() * 255) + 
+                        ", " + Math.floor(Math.random() * 255) +
+                        ", " + Math.floor(Math.random() * 255) + ")";
+            return color;
+        };
+
+        var points = 1000;
+        //var dataset = randomPoints(points);
+        var dataset = {{ dataset | tojson | e}};
+
+        var xScale = d3.scale.linear()
+                            .domain([0, d3.max(dataset, function(d) {return d.x;})])
+                            .range([padding, w - padding]);
+        var yScale = d3.scale.linear()
+                            .domain([0, d3.max(dataset, function(d) {return d.y;})])
+                            .range([padding, h - padding]);
+        var rScale = d3.scale.linear()
+                            .domain([0, d3.max(dataset, function(d) {return d.y;})])
+                            .range([4, 4]);                
+        var xAxis = d3.svg.axis()
+                        .scale(xScale)
+                        .orient("bottom")
+                        .ticks(5);
+        var yAxis = d3.svg.axis()
+                        .scale(yScale)
+                        .orient("left")
+                        .ticks(5);
+
+        var svg = d3.select("body")
+            .append("svg")
+            .attr({
+                height: h,
+                width: w
+            });
+        var circles = svg.selectAll("circle")
+            .data(dataset)
+            .enter()
+            .append("circle")
+            ;
+
+        circles.attr({
+            cx: function(d) {return xScale(d.x);},
+            cy: function(d) {return yScale(d.y);},
+            r: function(d) {return rScale(d.x);},
+            fill: function(d) {return d.color}
+        });
+
+        d3.select("body").select("h4")
+            .on("click", function(){
+                new_image();
+            });
+
+        var update_image = function(newDataset) {
+                h = window.innerHeight - 100;
+                console.log(h);
+                w = aspect * h;
+                xScale = d3.scale.linear()
+                            .domain([0, d3.max(newDataset, function(d) {return d.x;})])
+                            .range([padding, w - padding]);
+                yScale = d3.scale.linear()
+                            .domain([0, d3.max(newDataset, function(d) {return d.y;})])
+                            .range([padding, h - padding]);
+                rScale = d3.scale.linear()
+                            .domain([0, d3.max(newDataset, function(d) {return d.y;})])
+                            .range([4, 4]);                
+                var circles = svg.selectAll("circle")
+                    .data(newDataset);
+
+                circles.enter()
+                    .append("circle")
+                    .transition()
+                    //.delay(1000)
+                    //.duration(500)
+                    .attr({
+                        cx: function(d) {return xScale(d.x);},
+                        cy: function(d) {return yScale(d.y);},
+                        r: function(d) {return rScale(d.y);},
+                        fill: function(d) { return d.color; }
+                    });
+
+                circles.transition()
+                    //.delay(function(d) {return d.x/newDataset.length * 1000;})
+                    .duration(500)
+                    .attr({
+                        cx: function(d) {return xScale(d.x);},
+                        cy: function(d) {return yScale(d.y);},
+                        r: 6,
+                        fill: function(d) { return d.color; },
+                    })
+                    .each("end", function() {
+                        d3.select(this)
+                            .transition()
+                            .duration(500)
+                            .attr({
+                                r: function(d) {return rScale(d.y);}
+                            })
+                    });
+
+                circles.exit()
+                    .transition()
+                    .duration(500)
+                    .attr("x", w)
+                    .remove();
+            };
+            /*
+            [{x: _, y: _, color: _}, ...]
+            */
+            var new_image = function() {
+                //var dataset = {{ dataset | tojson | safe }}
+                //d3.json("{{ url_for('generate_picture_data') }} ", function(error, data) {
+                d3.json("{{ url_for('generate_picture_data') }} ", function(error, data) {
+                    if (data) { 
+                        var dataset = data.dataset;
+                        aspect = data.aspect;
+                        //console.log(dataset);
+                        //console.log(data.aspect);
+                        update_image(dataset);
+                        //return dataset;
+                    } else {
+                        console.log(error);
+                    };
+                });
+            };
+
+        </script>
+    </body>
+</html>
+
