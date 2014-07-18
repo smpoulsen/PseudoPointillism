@@ -6,36 +6,23 @@
         <title>Pointilism!</title>
     </head>
     <body>
-        <h4>Click me!</h4>
+        <h4>Random picture time!</h4>
 
         <script type="text/javascript">
+        /*
+        Variables for page layout and data.
+        */
         var aspect = {{ aspect }}
         var h = window.innerHeight - 100;
         var w = aspect * h;
         var padding = 10;
-
-        var randomPoints = function(points) {
-            var newDataset = [];
-            for (var i=0; i < points; i++){
-                var x = Math.floor(Math.random() * w);
-                var y = Math.floor(Math.random() * h);
-                var color = randomColors();
-                newDataset.push({"x":x, "y": y, "color": color});
-            }
-            return newDataset;
-        };
-
-        var randomColors = function() {
-            var color = "rgb(" + Math.floor(Math.random() * 255) + 
-                        ", " + Math.floor(Math.random() * 255) +
-                        ", " + Math.floor(Math.random() * 255) + ")";
-            return color;
-        };
-
-        var points = 1000;
-        //var dataset = randomPoints(points);
         var dataset = {{ dataset | tojson | e}};
+        var backgroundColor = "{{ background }}"
 
+        d3.select("body").style("background", backgroundColor);
+        /*
+        Scales for positioning of the points.
+        */
         var xScale = d3.scale.linear()
                             .domain([0, d3.max(dataset, function(d) {return d.x;})])
                             .range([padding, w - padding]);
@@ -45,14 +32,6 @@
         var rScale = d3.scale.linear()
                             .domain([0, d3.max(dataset, function(d) {return d.y;})])
                             .range([4, 4]);                
-        var xAxis = d3.svg.axis()
-                        .scale(xScale)
-                        .orient("bottom")
-                        .ticks(5);
-        var yAxis = d3.svg.axis()
-                        .scale(yScale)
-                        .orient("left")
-                        .ticks(5);
 
         var svg = d3.select("body")
             .append("svg")
@@ -69,7 +48,8 @@
         circles.attr({
             cx: function(d) {return xScale(d.x);},
             cy: function(d) {return yScale(d.y);},
-            r: function(d) {return rScale(d.x);},
+            r: 4,
+            //r: function(d) {return rScale(d.x);},
             fill: function(d) {return d.color}
         });
 
@@ -82,6 +62,8 @@
                 h = window.innerHeight - 100;
                 console.log(h);
                 w = aspect * h;
+                d3.select("body").style("background", backgroundColor);
+
                 xScale = d3.scale.linear()
                             .domain([0, d3.max(newDataset, function(d) {return d.x;})])
                             .range([padding, w - padding]);
@@ -97,17 +79,16 @@
                 circles.enter()
                     .append("circle")
                     .transition()
-                    //.delay(1000)
                     //.duration(500)
                     .attr({
                         cx: function(d) {return xScale(d.x);},
                         cy: function(d) {return yScale(d.y);},
-                        r: function(d) {return rScale(d.y);},
+                        r: 4,
+                        //r: function(d) {return rScale(d.y);},
                         fill: function(d) { return d.color; }
                     });
 
                 circles.transition()
-                    //.delay(function(d) {return d.x/newDataset.length * 1000;})
                     .duration(500)
                     .attr({
                         cx: function(d) {return xScale(d.x);},
@@ -120,7 +101,8 @@
                             .transition()
                             .duration(500)
                             .attr({
-                                r: function(d) {return rScale(d.y);}
+                                r: 4
+                                //r: function(d) {return rScale(d.y);}
                             })
                     });
 
@@ -134,16 +116,13 @@
             [{x: _, y: _, color: _}, ...]
             */
             var new_image = function() {
-                //var dataset = {{ dataset | tojson | safe }}
-                //d3.json("{{ url_for('generate_picture_data') }} ", function(error, data) {
                 d3.json("{{ url_for('generate_picture_data') }} ", function(error, data) {
                     if (data) { 
                         var dataset = data.dataset;
                         aspect = data.aspect;
-                        //console.log(dataset);
-                        //console.log(data.aspect);
+                        backgroundColor = data.background;
                         update_image(dataset);
-                        //return dataset;
+                        console.log(backgroundColor);
                     } else {
                         console.log(error);
                     };
